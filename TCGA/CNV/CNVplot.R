@@ -24,6 +24,26 @@ GeneToVisualize <- c("RSL24D1", "MAK16", "ARHGAP19", "CNOT6L", "CTCF", "SFPQ", "
                      "TMA16", "NRF1", "DIMT1", "LIN54", "RFX7", "DPH5", "SKIV2L2", "SNRNP40", "C7orf26", "TOMM22", "IRF2BP2", "RIOK2",
                      "MARS2", "SERBP1", "DTL", "INTS7", "UBTF", "RBM8A", "WDR43", "CREBBP", "HNRNPF", "PCBP2", "RFXAP", "NASP", "PM20D2",
                      "WDR82", "NOP14", "POLR1B", "TIMELESS", "NCAPD3", "BRD2")
+GeneToVisualize <- c(
+  "PIK3CA","KDR","KIT","PDGFRA","FGFR1","BCL11A",
+  "MLH1","APC","PTEN",
+  "CASP8","PIK3CA","EGFR","JAK2",
+  "ERRB3","KRAS","CTNNB1","MLH1","APC",
+  "CSF1R","PTCH1","PTEN","RB1",
+  "FGFR3","KDR","KIT","PDGFRA",
+  "PTEN","FGFR2","BRCA2","RB1",
+  "MAP2K1","BRCA1","PIK3CA",
+  "FGFR2","MLH1","FGFR2","PTEN",
+  "BRCA2",
+  "CCNE1","AKT3","ATR","MLH1",
+  "PIK3R1","ETV6","CREBBP","PALB2","NOTCH2",
+  "NOTCH3","BRD4","MYC","B2M","HLA-A","HLA-B","HLA-C",
+  "CCND2","FOXM1","MYB","PIM1","BAP1","MYCN","MCL1",
+  "CHEK1","NFIB","CDKN2B","STK11","EZH2","SUZ12","SMARCD1",
+  "PBRM1","DPF3","SMARCA4","ARID1B"
+)
+
+
 GeneToVisualize <- sort(unique(GeneToVisualize))
 
 FolderList <- list.dirs(dir.data)
@@ -148,7 +168,7 @@ transformationFormulaAxis2_thresh <- mean(transformationFormulaAxis2$score / tra
 scoreThreshAmp <- min(scores_filt_FDR_Amp$score)
 scoreThreshDel <- min(scores_filt_FDR_Del$score)
 
-for (j in 1:23) {
+for (j in 1:1) {
   curChr <- paste0("chr0", j)
   if (j > 9) {
     curChr <- paste0("chr", j)
@@ -158,19 +178,66 @@ for (j in 1:23) {
   scores_filt_call_cur <- scores_filt_call_cur[order(scores_filt_call_cur$`Region Start [bp]`, decreasing = FALSE), ]
   
   if (nrow(scores_filt_call_cur) != 0) { 
-    scores_filt_call_cur$`Region Start [bp]` == max(scores_filt_call_cur$`Region Start [bp]`)
-    
+    scores_filt_call_cur[scores_filt_call_cur$`Region Start [bp]` == max(scores_filt_call_cur$`Region Start [bp]`), "ChrPosLine"] <- curChr 
+  }
+  
+  tabAnno_conf <- tabAnno_conf_Amp
+  
+  if (length(colnames(tabAnno_conf)) > 1) {
+    curpos <- 1
+    for (k in 2:(length(colnames(tabAnno_conf)) - 1)) {
+      curSignif_Chr_p <- unlist(strsplit(as.character(colnames(tabAnno_conf)[k]), "q"))[1]
+      
+      curSignif_Chr_q <- unlist(strsplit(as.character(colnames(tabAnno_conf)[k]), "p"))[1]
+      
+      if (curSignif_Chr_p == j) {
+        if (length(intersect(scores_filt_call_cur$Type, "Amp")) == 1) {
+          scores_filt_call_cur[grep("Amp", scores_filt_call_cur$Type)[curpos], "ScoreSignif"] <- colnames(tabAnno_conf)[k]
+          
+          GeneSignif_Amp_Del <- as.matrix(tabAnno_conf[, colnames(tabAnno_conf)[k]])
+          if (length(intersect(GeneSignif_Amp_Del, GeneToVisualize)) != 0) {
+            scores_filt_call_cur[grep("Amp", scores_filt_call_cur$Type)[curpos], "GeneAmp"] <- 
+              as.character(paste(intersect(GeneSignif_Amp_Del, GeneToVisualize), collapse = ";"))
+          }
+          curpos <- curpos + 1
+        } 
+      }
+    }
   }
 }
 
-for (j in 1:23) {
-  print(j)
-}
+
+
+if (TRUE) {
+  n = 1
+  for (k in 1:35) {
+    if (2 == 4){
+    n = n+1
+    }
+    
+  }
+  print(n)
+} 
 
 
 
+GeneSignif_Amp_Del <- as.matrix(tabAnno_conf[, colnames(tabAnno_conf)[4]])
 
 
+scores_filt_call_cur[grep("Amp", scores_filt_call_cur$Type)[1], "ScoreSignif"] <- colnames(tabAnno_conf)[k]
+
+
+
+scores_filt_call_08 = scores_filt_call[scores_filt_call$Chromosome == "chr08",]
+scores_filt_call_08 = scores_filt_call_08[order(scores_filt_call_08$`Region Start [bp]`, decreasing = F), ]
+scores_filt_call_08[grep("Amp", scores_filt_call_08$Type)[1], "ScoreSignif"]
+
+GeneSignif_Amp_Del = as.matrix(tabAnno_conf[, "8p11.23"])
+
+intersect(GeneSignif_Amp_Del, GeneToVisualize)
+
+scores_filt_call_cur
+intersect(scores_filt_call_21$Type, "Amp")
 
 
 
