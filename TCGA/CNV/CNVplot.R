@@ -57,7 +57,7 @@ fileCurAmp <- FolderListCur[grep("amp_genes.conf_99", FolderListCur)]
 fileCurDel <- FolderListCur[grep("del_genes.conf_99", FolderListCur)]
 
 tabAnno_conf_Amp <- readr::read_delim(paste0(folderCur, "/", fileCurAmp), "\t", escape_double = FALSE, trim_ws = TRUE)
-tabAnno_conf_Del <- readr::read_delim(paste0(folderCur, "/", fileCurAmp), "\t", escape_double = FALSE, trim_ws = TRUE)
+tabAnno_conf_Del <- readr::read_delim(paste0(folderCur, "/", fileCurDel), "\t", escape_double = FALSE, trim_ws = TRUE)
 scores_filt_call <- readr::read_delim(paste0(folderCur, "/",fileCurScore), "\t", escape_double = FALSE, trim_ws = TRUE) %>%
   as.data.frame %>% dplyr::mutate(Aberration.Kind = 0) %>% 
   dplyr::mutate(Aberration.Kind = replace(Type, Type == "Amp", 1)) %>%
@@ -128,7 +128,7 @@ if (ncol(tabAnno_conf_Del) >1) {
 transformationFormulaAxis2 <- rbind(scores_filt_FDR_Amp, scores_filt_FDR_Del)
 transformationFormulaAxis2_thresh <- mean(transformationFormulaAxis2$score / transformationFormulaAxis2$`-log10(q-value)`)
 
-p <- VisualizeCNplot(scores_filt_call = scores_filt_call, GeneToVisualize = GeneToVisualize, chrArms = TRUE,
+p <- VisualizeCNplot(scores_filt_call = scores_filt_call, GeneToVisualize = GeneToVisualize, chrArms = F,
                       tabAnno_conf_Amp = tabAnno_conf_Amp, tabAnno_conf_Del = tabAnno_conf_Del,
                       FDR.thresh = FDR.thresh,
                       anno_Amp_GeneWidePeak = df_GR_ann_Amp_GeneWidePeak,
@@ -168,7 +168,7 @@ transformationFormulaAxis2_thresh <- mean(transformationFormulaAxis2$score / tra
 scoreThreshAmp <- min(scores_filt_FDR_Amp$score)
 scoreThreshDel <- min(scores_filt_FDR_Del$score)
 
-for (j in 1:1) {
+for (j in 1:23) {
   curChr <- paste0("chr0", j)
   if (j > 9) {
     curChr <- paste0("chr", j)
@@ -183,13 +183,14 @@ for (j in 1:1) {
   
   tabAnno_conf <- tabAnno_conf_Amp
   
+  
   if (length(colnames(tabAnno_conf)) > 1) {
     curpos <- 1
     for (k in 2:(length(colnames(tabAnno_conf)) - 1)) {
-      curSignif_Chr_p <- unlist(strsplit(as.character(colnames(tabAnno_conf)[k]), "q"))[1]
+      curSignif_Chr_q <- unlist(strsplit(as.character(colnames(tabAnno_conf)[k]), "q"))[1]
       
-      curSignif_Chr_q <- unlist(strsplit(as.character(colnames(tabAnno_conf)[k]), "p"))[1]
-      
+      curSignif_Chr_p <- unlist(strsplit(as.character(colnames(tabAnno_conf)[k]), "p"))[1]
+      # Position p-arm
       if (curSignif_Chr_p == j) {
         if (length(intersect(scores_filt_call_cur$Type, "Amp")) == 1) {
           scores_filt_call_cur[grep("Amp", scores_filt_call_cur$Type)[curpos], "ScoreSignif"] <- colnames(tabAnno_conf)[k]
@@ -200,11 +201,82 @@ for (j in 1:1) {
               as.character(paste(intersect(GeneSignif_Amp_Del, GeneToVisualize), collapse = ";"))
           }
           curpos <- curpos + 1
+          
         } 
+      }
+      # Position q-arm
+      if (curSignif_Chr_q == j) {
+        if (length(intersect(scores_filt_call_cur$Type, "Amp")) == 1) {
+          scores_filt_call_cur[grep("Amp", scores_filt_call_cur$Type)[curpos], "ScoreSignif"] <- colnames(tabAnno_conf)[k]
+          
+          GeneSignif_Amp_Del <- as.matrix(tabAnno_conf[, colnames(tabAnno_conf)[k]])
+          
+          if (length(intersect(GeneSignif_Amp_Del, GeneToVisualize)) != 0) {
+            scores_filt_call_cur[grep("Amp", scores_filt_call_cur$Type)[curpos], "GeneAmp"] <- 
+              as.character(paste(intersect(GeneSignif_Amp_Del, GeneToVisualize), collapse = ";"))
+          }
+          curpos <- curpos + 1
+          
+        }
       }
     }
   }
+  # Deletion file
+  
+  tabAnno_conf <- tabAnno_conf_Del
+  
+  if (length(colnames(tabAnno_conf)) > 1) {
+    curpos <- 1
+    for (k in 2:(length(colnames(tabAnno_conf)) - 1)) {
+      curSignif_Chr_q <- unlist(strsplit(as.character(colnames(tabAnno_conf)[k]), "q"))[1]
+      
+      curSignif_Chr_p <- unlist(strsplit(as.character(colnames(tabAnno_conf)[k]), "p"))[1]
+      # Position p-arm
+      if (curSignif_Chr_p == j) {
+        if (length(intersect(scores_filt_call_cur$Type, "Del")) == 1) {
+          scores_filt_call_cur[grep("Del", scores_filt_call_cur$Type)[curpos], "ScoreSignif"] <- colnames(tabAnno_conf)[k]
+          
+          GeneSignif_Amp_Del <- as.matrix(tabAnno_conf[, colnames(tabAnno_conf)[k]])
+          if (length(intersect(GeneSignif_Amp_Del, GeneToVisualize)) != 0) {
+            scores_filt_call_cur[grep("Del", scores_filt_call_cur$Type)[curpos], "GeneDel"] <- 
+              as.character(paste(intersect(GeneSignif_Amp_Del, GeneToVisualize), collapse = ";"))
+          }
+          curpos <- curpos + 1
+          
+        } 
+      }
+      # Position q-arm
+      if (curSignif_Chr_q == j) {
+        if (length(intersect(scores_filt_call_cur$Type, "Del")) == 1) {
+          scores_filt_call_cur[grep("Del", scores_filt_call_cur$Type)[curpos], "ScoreSignif"] <- colnames(tabAnno_conf)[k]
+          
+          GeneSignif_Amp_Del <- as.matrix(tabAnno_conf[, colnames(tabAnno_conf)[k]])
+          
+          if (length(intersect(GeneSignif_Amp_Del, GeneToVisualize)) != 0) {
+            scores_filt_call_cur[grep("Del", scores_filt_call_cur$Type)[curpos], "GeneDel"] <- 
+              as.character(paste(intersect(GeneSignif_Amp_Del, GeneToVisualize), collapse = ";"))
+          }
+          curpos <- curpos + 1
+          
+        }
+      }
+    }
+  }
+  scores_filt_call_merged <- rbind(scores_filt_call_merged, scores_filt_call_cur)
 }
+
+df <- subset(scores_filt_call_merged, select = c(
+  "Type", "score", "Chromosome", "Region Start [bp]", "Region End [bp]", 
+  "-log10(q-value)", "ScoreSignif", "ChrPosLine", "GeneAmp"
+))
+df
+
+colnames(df)[colnames(df) == "Region Start [bp]"] <- "start"
+colnames(df)[colnames(df) == "Region End [bp]"] <- "end"
+
+df[df$Type == "Del", "score"] <- -df[df$Type == "Del", "score"]
+
+df <- cbind(Xpos = 1:nrow(df), df)
 
 
 
