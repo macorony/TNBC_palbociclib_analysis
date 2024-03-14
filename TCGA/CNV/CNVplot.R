@@ -128,7 +128,7 @@ if (ncol(tabAnno_conf_Del) >1) {
 transformationFormulaAxis2 <- rbind(scores_filt_FDR_Amp, scores_filt_FDR_Del)
 transformationFormulaAxis2_thresh <- mean(transformationFormulaAxis2$score / transformationFormulaAxis2$`-log10(q-value)`)
 
-p <- VisualizeCNplot(scores_filt_call = scores_filt_call, GeneToVisualize = GeneToVisualize, chrArms = F,
+p <- VisualizeCNplot(scores_filt_call = scores_filt_call, GeneToVisualize = GeneToVisualize, chrArms = T,
                       tabAnno_conf_Amp = tabAnno_conf_Amp, tabAnno_conf_Del = tabAnno_conf_Del,
                       FDR.thresh = FDR.thresh,
                       anno_Amp_GeneWidePeak = df_GR_ann_Amp_GeneWidePeak,
@@ -267,7 +267,7 @@ for (j in 1:23) {
 
 df <- subset(scores_filt_call_merged, select = c(
   "Type", "score", "Chromosome", "Region Start [bp]", "Region End [bp]", 
-  "-log10(q-value)", "ScoreSignif", "ChrPosLine", "GeneAmp"
+  "-log10(q-value)", "ScoreSignif", "ChrPosLine", "GeneAmp", "GeneDel"
 ))
 df
 
@@ -278,7 +278,162 @@ df[df$Type == "Del", "score"] <- -df[df$Type == "Del", "score"]
 
 df <- cbind(Xpos = 1:nrow(df), df)
 
+# Amp Genes
 
+if (length(intersect(df$GeneAmp, GeneToVisualize)) == 0) {
+  df_GR_ann_Amp <- 0
+  length(df_GR_ann_Amp) <- 0
+}
+
+if (length(intersect(df$GeneAmp, GeneToVisualize)) != 0) {
+  geneAmp_list <- NULL
+  for (id in 1:nrow(df)) {
+    curGene <- df$GeneAmp[id]
+    
+    if (curGene != "No") {
+      geneAmp_list <- c(geneAmp_list, curGene)
+    } 
+  }
+  geneAmp_list_split <- NULL
+  
+  for (id in 1:length(geneAmp_list)) {
+    curGene <- geneAmp_list[id]
+    
+    if (curGene != "No") {
+      geneAmp_list_split <- c(geneAmp_list_split, unlist(strsplit(curGene, ";")))
+    }
+  }
+  geneAmp_list_split <- sort(geneAmp_list_split)
+  
+  df_GR_ann_Amp <- df_GR_ann_Amp_GeneWidePeak[df_GR_ann_Amp_GeneWidePeak$GeneSymbol %in% geneAmp_list_split, ]
+  
+  df_GR_ann_Amp <- df_GR_ann_Amp[order(df_GR_ann_Amp$score, decreasing = T), ]
+  df_GR_ann_Amp <- df_GR_ann_Amp[!duplicated(df_GR_ann_Amp$GeneSymbol), ]
+  
+}
+
+
+# Del Genes
+
+if (length(intersect(df$GeneDel, GeneToVisualize)) == 0) {
+  df_GR_ann_Del <- 0
+  length(df_GR_ann_Del) <- 0
+}
+
+if (length(intersect(df$GeneDel, GeneToVisualize)) != 0) {
+  geneDel_list <- NULL
+  for (id in 1:nrow(df)) {
+    curGene <- df$GeneDel[id]
+    
+    if (curGene != "No") {
+      geneDel_list <- c(geneDel_list, curGene)
+    } 
+  }
+  geneDel_list_split <- NULL
+  
+  for (id in 1:length(geneDel_list)) {
+    curGene <- geneDel_list[id]
+    
+    if (curGene != "No") {
+      geneDel_list_split <- c(geneDel_list_split, unlist(strsplit(curGene, ";")))
+    }
+  }
+  geneDel_list_split <- unique(sort(geneDel_list_split))
+  
+  df_GR_ann_Del <- df_GR_ann_Del_GeneWidePeak[df_GR_ann_Del_GeneWidePeak$GeneSymbol %in% geneDel_list_split, ]
+    
+  df_GR_ann_Del <- df_GR_ann_Del[order(df_GR_ann_Del$score, decreasing = T), ]
+  df_GR_ann_Del <- df_GR_ann_Del[!duplicated(df_GR_ann_Del$GeneSymbol), ]
+  
+}
+
+
+df_mod <- df
+df_mod$GeneAmp <- rep("No", nrow(df_mod))
+df_mod$GeneDel <- rep("No", nrow(df_mod))
+
+if (length(df_GR_ann_Del) != 0) {
+  df_GR_ann_merged <- df_GR_ann_Del
+}
+if (length(df_GR_ann_Amp) != 0) {
+  df_GR_ann_merged <- rbind(df_GR_ann_Amp, df_GR_ann_Del)
+}
+
+df_mod <- cbind(df_mod, 
+                ChrStartEnd = paste0(gsub("chr", "", gsub("chr0", "", df_mod$Chromosome)), "_",
+                                     df_mod$start, "_", df_mod$end)
+                )
+
+df_mod$ChrStartEnd <- as.character(df_mod$ChrStartEnd)
+
+df_GR_ann_merged <- cbind(
+  df_GR_ann_merged, 
+  ChrStartEnd = paste0(
+  df_GR_ann_merged$Chr, 
+  "_",
+  df_GR_ann_merged$start, 
+  "_", 
+  df_GR_ann_merged$end)
+  )
+
+df_GR_ann_merged$ChrStartEnd <- as.character(df_GR_ann_merged$ChrStartEnd)
+
+show.names = "significant"
+if (show.names == "significant") {
+  df_GR_ann_merged <- df_GR_ann_merged[df_GR_ann_merged$`-log10(q-value)` > -log10(FDR.thresh), ]
+  }
+
+for (curSelIew in c("Amp", "Del")) {
+  tabGRcur_ampDel <- df_GR_ann_merged[df_GR_ann_merged$Type %in% curSelIew, ]
+  
+  for (iw in 1:nrow(tabGRcur_ampDel)) {
+    curgene <- tabGRcur_ampDel[iw, ]
+    tabGrcur <- tabGRcur_ampDel[tabGRcur_ampDel$GeneSymbol %in% curgene$GeneSymbol, ]
+    df_mod[df_mod$ChrStartEnd == tabGrcur$ChrStartEnd, paste0("Gene", curSelIew)] <- 
+      curgene$GeneSymbol
+  }
+}
+df <- df_mod
+df$Chromosome <- factor(df$Chromosome, levels = unique(sort(df$Chromosome)))
+require(ggrepel)
+
+p1 <- ggplot() + geom_bar(aes(y = score, x = Xpos, col = Type), data = df, stat = "identity")
+p1 <- p1 + scale_y_continuous(limits = c(-0.75, 1.5))
+p1 <- p1 + geom_hline(yintercept = scoreThreshAmp, 
+                      linetype = "dashed", 
+                      color = "orange")
+p1 <- p1 + geom_hline(yintercept = scoreThreshDel, 
+                      linetype = "dashed",
+                      color = "orange")
+
+for (ichr in 1:23) {
+  curPosChrsel <- df[df$Chromosome %in% paste0("chr0", ichr), ]
+  if (ichr > 9) {
+    curPosChrsel <- df[df$Chromosome %in% paste0("chr", ichr), ]
+  }
+  
+  curPosChrsel <- curPosChrsel[curPosChrsel$ChrPosLine !=0, ]
+  print(paste0("chr", ichr, " and ", curPosChrsel$Xpos))
+  p1 <- p1 + geom_vline(
+    xintercept = curPosChrsel$Xpos,
+    linetype = "dashed",
+    color = "black",
+    alpha = 0.2
+  )
+}
+
+
+
+p1
+
+for (curSelIew in c("Amp", "Del")) {
+  print(curSelIew)
+}
+
+
+intersect(df$GeneAmp, GeneToVisualize)
+
+df_GR_ann_Amp
 
 if (TRUE) {
   n = 1
