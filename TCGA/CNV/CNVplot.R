@@ -422,18 +422,46 @@ for (ichr in 1:23) {
   )
 }
 
+chr.labels <- df %>% dplyr::filter(ChrPosLine != 0)
+chr.labels
+p1 <- p1 + scale_x_continuous(
+  breaks = c(chr.labels$Xpos),
+  limits = c(0, max(df$Xpos)),
+  expand = c(0, 0), 
+  labels = gsub("chr23", "chrX", c(paste0(chr.labels$Chromosome)))
+)
 
+p1 <- p1 + labs(
+  title = paste0("Amplification and Deletion with Gistic2 in ", "TNBC all"),
+  x = "Chromosomes",
+  y = "G-scores"
+)
 
-p1
+df_Amp_gene <- df[df$Type %in% "Amp", ]
+df_Amp_gene <- df_Amp_gene[df_Amp_gene$GeneAmp != "No", ]
 
-for (curSelIew in c("Amp", "Del")) {
-  print(curSelIew)
+df_Del_gene <- df[df$Type %in% "Del", ]
+df_Del_gene <- df_Del_gene[df_Del_gene$GeneDel != "No", ]
+
+if (nrow(df_Amp_gene) != 0) {
+  p1 <- p1 + geom_point(
+    data = df_Amp_gene, 
+    shape = 1,
+    color = "black",
+    aes(x = Xpos, y = score)
+  )
+  
+  p1 <- p1 + scale_shape(solid = FALSE)
+  
+  p1 <- p1 + geom_label_repel(
+    data = df_Amp_gene, 
+    aes()
+  )
 }
 
 
-intersect(df$GeneAmp, GeneToVisualize)
 
-df_GR_ann_Amp
+
 
 if (TRUE) {
   n = 1
