@@ -4,6 +4,9 @@ library(GenomicRanges)
 library(ggpubr)
 
 
+
+
+load(file = "./data/TCGA/TCGA_TNBC_192samples_CNV.Rdata")
 # How to create folders
 dir.data <- "data/GISTIC/"
 dir.plot <- "palbociclib_plots/GISTIC"
@@ -455,51 +458,39 @@ if (nrow(df_Amp_gene) != 0) {
   
   p1 <- p1 + geom_label_repel(
     data = df_Amp_gene, 
-    aes()
+    aes(label = GeneAmp, x = Xpos, y = score), 
+    nudge_y = 0.5,
+    segment.size = 0.2,
+    nudge_x = 0.5,
+    box.padding = 0.35,
+    point.padding = 0.5, 
+    size = 3, 
+    label.size = 0.1, 
+    segment.color = "grey50"
+  )
+}
+
+if (nrow(df_Del_gene) != 0) {
+  p1 <- p1 + geom_point(
+    data = df_Del_gene, 
+    shape = 1,
+    color = "black",
+    aes(x = Xpos, y = score)
+  )
+  
+  p1 <- p1 + geom_label_repel(
+    data = df_Del_gene,
+    aes(label = GeneDel, x = Xpos, y = score), 
+    nudge_y = -0.75,
+    nudge_x = -0.75,
+    box.padding = 0.35,
+    point.padding = 0.5,
+    segment.size = 0.2,
+    size = 3,
+    label.size = 0.1,
+    segment.color = "grey50"
   )
 }
 
 
 
-
-
-if (TRUE) {
-  n = 1
-  for (k in 1:35) {
-    if (2 == 4){
-    n = n+1
-    }
-    
-  }
-  print(n)
-} 
-
-
-
-GeneSignif_Amp_Del <- as.matrix(tabAnno_conf[, colnames(tabAnno_conf)[4]])
-
-
-scores_filt_call_cur[grep("Amp", scores_filt_call_cur$Type)[1], "ScoreSignif"] <- colnames(tabAnno_conf)[k]
-
-
-
-scores_filt_call_08 = scores_filt_call[scores_filt_call$Chromosome == "chr08",]
-scores_filt_call_08 = scores_filt_call_08[order(scores_filt_call_08$`Region Start [bp]`, decreasing = F), ]
-scores_filt_call_08[grep("Amp", scores_filt_call_08$Type)[1], "ScoreSignif"]
-
-GeneSignif_Amp_Del = as.matrix(tabAnno_conf[, "8p11.23"])
-
-intersect(GeneSignif_Amp_Del, GeneToVisualize)
-
-scores_filt_call_cur
-intersect(scores_filt_call_21$Type, "Amp")
-
-
-
-scores_filt_call_cur <- scores_filt_call[scores_filt_call$Chromosome == 1,]
-scores_filt_call_cur <- scores_filt_call[order(scores_filt_call$`Region Start [bp]`, decreasing = FALSE), ]
-scores_filt_call_cur[scores_filt_call_cur$`Region Start [bp]` == max(scores_filt_call_cur$`Region Start [bp]`), "ChrPosLine"]
-
-diamonds %>% group_by(clarity, cut) %>%
-  ggplot(aes(x = clarity, y = price, group = cut, fill = cut)) + 
-  geom_bar(stat = "identity")
