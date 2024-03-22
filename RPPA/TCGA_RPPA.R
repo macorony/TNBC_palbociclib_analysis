@@ -60,14 +60,55 @@ DM_limma <- function(
   
   df <- svobj$sv %>% as.data.frame
   colnames(df) <- paste0("sv", 1:n.sv)
+  modSv = cbind(mod, df)
+  mod0Sv = cbind(mod0, df)
   
-
+  data.vlmfit = lmFit(data, modSv)
+  Fit.eb <- eBayes(data.vlmfit)
+  res.collect <- topTable(Fit.eb, coef = grp_by, adjust.method = "BH", n = Inf, sort.by = "P")
+  Temp_id <- match(rownames(res.collect), rownames(data))
+  res.collect <- cbind(res.collect, data[Temp_id, ])
+  if (!is.null(output_dir)) {
+    write.csv(
+      x = res.collect, file = paste0(output_dir, "/", prefix, "_", "centroid_RPPA_testing.csv"),
+      row.names = T, quote = F
+    )
+  }
+  res.collect
+  
 }
-metadata$Stage = factor(metadata$Stage)
-model.matrix(formula(paste0("~", "BL1+Stage+Age")), data = metadata)
-model.matrix(~Age+Stage, data= metadata)
+
+res.BL1 = DM_limma(data = exp, 
+                   sample_info = metadata, 
+                   grp_by = "BL1", 
+                   mult_factor = "BL1+Stage+Age", 
+                   output_dir = dir.output, 
+                   prefix = "BL1")
+
+
+
+metadata$Stage <- factor(metadata$Stage)
+mod <- model.matrix(formula(paste0("~", "BL1+Stage+Age")), data = metadata)
+mod0 <- model.matrix(~Age+Stage, data= metadata)
+
+exp <- exp %>% na.omit %>% as.matrix
+
+n.sv <- num.sv(exp, mod = mod, method = "be", B=20, seed = set.seed(5000))
+n.sv
+
+svobj <- sva(exp, mod, mod0, n.sv = n.sv)
 xnam <- paste0("x", 1:25)
 as.formula(paste("y ~ ", paste(xnam, collapse = "+")))
 paste("y ~ ", paste(xnam, collapse = "+"))
 
+# num.sv surrogate variable analysis example
+library(bladderbatch)
+data(bladderdata)
+dat <- bladderEset[1:5000, ]
+pheno <- pData(dat)
+edata <- exprs(dat)
+edata
 
+# create design matrix
+
+mod = model.matrix(~as.factor(cancer), data = pheno)
