@@ -4,6 +4,7 @@ library(edgeR)
 library(plyr)
 library(sva)
 library(dplyr)
+library(pheatmap)
 options(scipen = 500)
 
 dir.data <- "data"
@@ -85,7 +86,7 @@ res.BL1 = DM_limma(data = exp,
                    output_dir = dir.output, 
                    prefix = "BL1")
 
-
+pheatmap(res.BL1, show_rownames = F, show_colnames = F)
 
 metadata$Stage <- factor(metadata$Stage)
 mod <- model.matrix(formula(paste0("~", "BL1+Stage+Age")), data = metadata)
